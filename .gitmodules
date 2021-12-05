@@ -1,0 +1,9 @@
+[submodule "third-party/sokol-zig"]
+	path = third-party/sokol-zig
+	url = https://github.com/floooh/sokol-zig
+[submodule "third-party/microui"]
+	path = third-party/microui
+	url = https://github.com/rxi/microui.git
+[submodule "third-party/lua"]
+	path = third-party/lua
+	url = https://github.com/lua/lua.git
