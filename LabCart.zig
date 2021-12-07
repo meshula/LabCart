@@ -350,6 +350,7 @@ export fn frame() void
         }
         if (submitted == 1) {
             Terminal.append_line(state.terminal.?, &text_buff);
+            Terminal.constrain_visible(state.terminal.?);
         }
 
         ui.mu_end_window(mu_context);
