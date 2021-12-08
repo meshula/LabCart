@@ -13,7 +13,7 @@ const test_lua = @import("LabCartLua.zig");
 const print = @import("std").debug.print;
 
 var raw = std.heap.GeneralPurposeAllocator(.{}){};
-pub const ALLOCATOR = &raw.allocator;
+var ALLOCATOR : ?std.mem.Allocator = raw.allocator();
 
 pub const ArrayList = std.ArrayList;
 
@@ -179,7 +179,7 @@ pub const Terminal = struct {
 
     pub fn init(width: u8, height: u8, buff_height: u32) Terminal {
         var buff_len = width * (height + buff_height);
-        var buff = ArrayList(u8).initCapacity(ALLOCATOR, buff_len) 
+        var buff = ArrayList(u8).initCapacity(ALLOCATOR.?, buff_len) 
             catch unreachable;
 
         buff.appendNTimes(0, width * (height + buff_height)) catch unreachable;
@@ -484,7 +484,7 @@ pub fn main() !void {
     var args = std.process.args();
 
     // ignore the app name, always first in args
-    _ = args.next(ALLOCATOR);
+    _ = args.next(ALLOCATOR.?);
 
     test_lua.test_lua();
 
