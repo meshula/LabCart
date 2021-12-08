@@ -101,6 +101,9 @@ fn drawTriangle() void {
 
 var text_buff: [256]u8 = [_]u8{0} ** 256;
 
+var last_x : u32 = 0;
+var last_y : u32 = 0;
+
 export fn frame() void
 {
     const ww = sapp.widthf();
@@ -186,6 +189,29 @@ export fn frame() void
     sdtx.canvas(sapp.widthf()*0.5, sapp.heightf()*0.5);
     sdtx.origin(0.0, 2.0);
     sdtx.home();
+
+
+    {
+        var th = state.frame_count * 0.0075;
+        th = @mod(th, 1.0) * 2.0 * 3.1415926539;
+        var cos_th = @cos(th);
+        var sin_th = @sin(th);
+
+        Terminal.write_line(state.terminal.?, "     ", 7,
+                            last_x, last_y);
+
+        var x = 9.0 * cos_th + 10.0;
+        var y = 9.0 * sin_th + 10.0;
+        last_x = @floatToInt(u32, x);
+        last_y = @floatToInt(u32, y);
+
+        Terminal.write_line(state.terminal.?, "World", 7,
+                            last_x, last_y);
+    }
+
+
+
+
 
     Terminal.render(state.terminal.?);
 

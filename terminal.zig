@@ -34,40 +34,65 @@ pub fn init_text_system() void {
 pub const Terminal = struct {
     buffer : ArrayList(u8),     // text buffer
     cbuffer : ArrayList(u8),    // palette indices
-    w : u8 = 0,
+    width : u8 = 0,
     visible_h : u8 = 0,
     next_write_y : u32 = 0,
     first_visible_y : u32 = 0,
     buffer_height : u32 = 0,
     buffer_len : u32 = 0,
 
-    pub fn init(alloc: std.mem.Allocator, width: u8, height: u8, buff_height: u32) Terminal {
-        var buff_len = width * (height + buff_height);
+    pub fn init(alloc: std.mem.Allocator, w: u8, height: u8, buff_height: u32) Terminal {
+        var buff_len = w * (height + buff_height);
         var buff = ArrayList(u8).initCapacity(alloc, buff_len)
             catch unreachable;
-        buff.appendNTimes(0, width * (height + buff_height)) catch unreachable;
+        buff.appendNTimes(0, w * (height + buff_height)) catch unreachable;
         var cbuff = ArrayList(u8).initCapacity(alloc, buff_len)
             catch unreachable;
-        cbuff.appendNTimes(0, width * (height + buff_height)) catch unreachable;
+        cbuff.appendNTimes(0, w * (height + buff_height)) catch unreachable;
 
         return Terminal{
             .buffer = buff,
             .cbuffer = cbuff,
-            .w = width,
+            .width = w,
             .visible_h = height,
             .buffer_height = buff_height,
             .buffer_len = buff_len,
         };
     }
 
+    pub fn write_line(t: *Terminal, line: [] const u8, col: u8, x: u32, y: u32) void {
+        if (x > t.width or y > t.buffer_height or line.len == 0) {
+            return;
+        }
+
+        var max_len = line.len;
+        if (x + max_len > t.width)
+            max_len = t.width - x;
+
+        var addr = (y * t.width) + x;
+        //print("({d}, {d}): {d} addr {d}:{d}\n", .{x, y, t.width, addr, (y*t.width)+x});
+
+        var i : u32 = 0;
+        while (i < max_len) {
+            t.buffer.items[addr + i] = line[i];
+            t.cbuffer.items[addr + i] = col;
+            i += 1;
+        }
+        while (i < max_len) {
+            t.buffer.items[addr + i] = 0;
+            t.cbuffer.items[addr + i] = 0;
+            i += 1;
+        }
+    }
+
     pub fn append_line(t: *Terminal, line: [] const u8, col: u8) void {
         // replace the line at cursor if line isn't empty
         if (line.len > 0) {
             var max_len = line.len;
-            if (max_len > t.w) {
-                max_len = t.w;
+            if (max_len > t.width) {
+                max_len = t.width;
             }
-            var addr = (t.next_write_y * t.w) % t.buffer_len;
+            var addr = (t.next_write_y * t.width) % t.buffer_len;
             //print("append at y {d}, width {d}, bh {d}, addr {d}\n", .{t.next_write_y, t.w, t.buffer_height, addr});
             var i : u32 = 0;
             while (i < max_len) {
@@ -106,15 +131,15 @@ pub const Terminal = struct {
 
     pub fn render(t: *Terminal) void {
         sdtx.font(C64);
+        sdtx.pos(0, 0);
         var x: u8 = 0;
         var y: u8 = 0;
-        var addr: u32 = (t.first_visible_y * t.w) % t.buffer_len;
+        var addr: u32 = (t.first_visible_y * t.width) % t.buffer_len;
         while (y < t.visible_h) {
-            while (x < t.w) {
+            while (x < t.width) {
                 var c: u8 = t.buffer.items[addr + x];
-                if (c == 0) {
-                    break;
-                }
+                if (c == 0)
+                    c = 32;
                 var col = palette.pico8(t.cbuffer.items[addr + x]);
                 sdtx.color3b(col.r, col.g, col.b);
                 sdtx.putc(c);
@@ -122,7 +147,7 @@ pub const Terminal = struct {
             }
             sdtx.crlf();
             y += 1;
-            addr = ((t.first_visible_y + y) * t.w) % t.buffer_len;
+            addr = ((t.first_visible_y + y) * t.width) % t.buffer_len;
             //print("{s}\n", .{t.buffer.items[addr..addr+t.w]});
             x = 0;
         }
@@ -132,7 +157,7 @@ pub const Terminal = struct {
         var y: u32 = 0;
         while (y < 10) {
             var addr: u32 = (y * t.w);
-            print("{s}\n", .{t.buffer.items[addr..addr+t.w]});
+            print("{s}\n", .{t.buffer.items[addr..addr+t.width]});
             y += 1;
         }
     }
