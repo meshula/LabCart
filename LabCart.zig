@@ -15,9 +15,14 @@ const print = @import("std").debug.print;
 const palette = @import("palette.zig");
 const terminal = @import("terminal.zig");
 const Terminal = terminal.Terminal;
+const lf = @cImport({ @cInclude("LabFont.h"); });
 
 var raw = std.heap.GeneralPurposeAllocator(.{}){};
 var ALLOCATOR : ?std.mem.Allocator = raw.allocator();
+var font_japanese: ?*lf.LabFont = undefined;
+var j_st: ?*lf.LabFontState = undefined;
+var font_normal: ?*lf.LabFont = undefined;
+var n_st: ?*lf.LabFontState = undefined;
 
 
 var mu_context : ?*ui.mu_Context = null;
@@ -50,12 +55,35 @@ pub fn drawPoint(x_ndc: f32, y_ndc:f32, ptsize:f32, col:palette.Color_u8) void {
 
 
 export fn init() void {
+    // setup sokol-gfx
     sg.setup(.{ 
         .context = sgapp.context()
     });
+
+    // setup sokol-gl
     sgl.setup(.{
         .sample_count = sapp.sampleCount()
     });
+
+   font_normal = lf.LabFontLoad("serif-normal",
+        "/Users/nporcino/dev/LabCart/third-party/LabFont/resources/DroidSerif-Regular.ttf",
+        lf.LabFontType { .type = lf.LabFontTypeTTF } );
+
+   font_japanese = lf.LabFontLoad("sans-japanese",
+        "/Users/nporcino/dev/LabCart/third-party/LabFont/resources/DroidSansJapanese.ttf",
+        lf.LabFontType { .type = lf.LabFontTypeTTF } );
+
+    var med_red: lf.struct_LabFontColor = lf.struct_LabFontColor{ 
+        .rgba = [4]u8{32, 0, 0, 255}};
+
+    var align_left = lf.LabFontAlign{.alignment = lf.LabFontAlignLeft};
+    j_st = lf.LabFontStateBake_bind(font_japanese, 
+        24, 
+        &med_red, &align_left, 0, 0);
+
+    n_st = lf.LabFontStateBake_bind(font_normal, 
+        24,
+        &med_red, &align_left, 0, 0); 
 
     // set up pipeline state as needed for typical 3d rendering
     state.sgl_pipeline = sgl.makePipeline(.{
@@ -81,12 +109,12 @@ export fn init() void {
     terminal.init_text_system();
 
     // clear screen pass action
-    var col = sg.Color{ .r = palette.Palette.bg_f.r,
-                    .g = palette.Palette.bg_f.g, .b = palette.Palette.bg_f.b };
+    var col = sg.Color{ .r = 0.3, .g = 0.4, .b = 0.5 };
     state.pass_action.colors[0] = .{ .action = .CLEAR, .value = col};
 
     mu_context = ui.microui_init(&ui_pip);
 }
+
 
 
 
@@ -108,7 +136,13 @@ export fn frame() void
 {
     const ww = sapp.widthf();
     const wh = sapp.heightf();
+    sgl.defaults();
+    sgl.matrixModeProjection();
+    sgl.ortho(0, ww, wh, 0, -1, 1);
+    sgl.scissorRect(0, 0, @floatToInt(i32, ww), @floatToInt(i32, wh), true);
     sgl.viewportf(0,0,ww,wh, true);
+
+    drawTriangle();
 
     ui.microui_begin();
     
@@ -209,11 +243,25 @@ export fn frame() void
                             last_x, last_y);
     }
 
-
-
-
-
     Terminal.render(state.terminal.?);
+    sgl.matrixModeProjection();
+    sgl.ortho(0, ww, wh, 0, -1, 1);
+    sgl.scissorRect(0, 0, @floatToInt(i32, ww), @floatToInt(i32, wh), true);
+ 
+    sgl.enableTexture();
+    
+    //_ = lf.LabFontDraw("いろはにほへと ちりぬるを わかよたれそ つねならむ うゐのおくやま けふこえて あさきゆめみし ゑひもせす　京（ん）", 30, 400, j_st);
+
+    _ = lf.LabFontDraw("Testing", 30, 460, n_st);
+     sgl.matrixModeProjection();
+    sgl.ortho(0, ww, wh, 0, -1, 1);
+    sgl.scissorRect(0, 0, @floatToInt(i32, ww), @floatToInt(i32, wh), true);
+    _ = lf.LabFontDraw("Testing 123", 30, 440, n_st);
+
+    _ = lf.LabFontDraw("Testing", 30, 460, j_st);
+
+    lf.LabFontCommitTexture();
+
 
 
     // do the actual rendering
@@ -308,6 +356,7 @@ export fn cleanup() void {
     sg.shutdown();
 }
 
+
 pub fn main() !void {
     var args = std.process.args();
 
@@ -315,7 +364,6 @@ pub fn main() !void {
     _ = args.next(ALLOCATOR.?);
 
     test_lua.test_lua();
-
     state.terminal = &Terminal.init(ALLOCATOR.?, 40, 24, 24);
     Terminal.append_line(state.terminal.?, "Hello world 1", 0);
     Terminal.append_line(state.terminal.?, "Hello world 2", 1);

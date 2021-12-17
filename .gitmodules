@@ -7,3 +7,9 @@
 [submodule "third-party/lua"]
 	path = third-party/lua
 	url = https://github.com/lua/lua.git
+[submodule "third-party/LabFont"]
+	path = third-party/LabFont
+	url = https://github.com/meshula/LabFont.git
+[submodule "third-party/rapidjson"]
+	path = third-party/rapidjson
+	url = https://github.com/Tencent/rapidjson.git
