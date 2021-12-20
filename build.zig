@@ -5,6 +5,7 @@ const CrossTarget = std.zig.CrossTarget;
 const Mode = std.builtin.Mode;
 const buildSokol = @import("third-party/sokol-zig/build.zig").buildSokol;
 const buildLua = @import("third-party/lua-build.zig").buildLua;
+const print = @import("std").debug.print;
 
 var raw = std.heap.GeneralPurposeAllocator(.{}){};
 pub const ALLOCATOR = &raw.allocator;
@@ -12,11 +13,24 @@ pub const ALLOCATOR = &raw.allocator;
 const c_args = [_][]const u8{
     "-std=c11",
     "-fno-sanitize=undefined",
+    "-DSOKOL_ZIG_BINDINGS",
 };
 
 const cpp_args = [_][]const u8{
     "-std=c++17",
     "-fno-sanitize=undefined",
+    "-DSOKOL_ZIG_BINDINGS",
+};
+
+const fonts = [_][]const u8{
+    "DroidSansJapanese.ttf",
+    "DroidSerif-Bold.ttf",
+    "DroidSerif-Italic.ttf",
+    "DroidSerif-Regular.ttf",
+    "hauer-12.png",
+    "hauer-12.font.json",
+    "robot-18.png",
+    "robot-18.font.json",
 };
 
 pub fn build(b: *Builder) void {
@@ -65,6 +79,21 @@ pub fn build(b: *Builder) void {
         exe_LabCart.linkLibC();
         exe_LabCart.install();
     }
+
+    for (fonts) |font| {
+        var path = std.fs.path.join(b.allocator, &.{"./third-party/LabFont/resources", font}) catch unreachable;
+
+        var dst_path: []u8 = std.fs.path.join(b.allocator, &.{ "LabCart-rsrc", font }) catch unreachable;
+
+        const font_install = b.addInstallBinFile(
+            .{ .path = path }, dst_path);
+
+        b.getInstallStep().dependOn(&font_install.step);
+    }
+
+    const font_install = b.addInstallBinFile(
+        .{ .path = "./third-party/LabFont/resources/hauer-12.png" }, "LabCart-rsrc/hauer-12.png");
+    b.getInstallStep().dependOn(&font_install.step);
 
     const run = exe_LabCart.run();
     run.step.dependOn(b.getInstallStep());
