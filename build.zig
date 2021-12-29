@@ -3,7 +3,7 @@ const Builder = std.build.Builder;
 const LibExeObjStep = std.build.LibExeObjStep;
 const CrossTarget = std.zig.CrossTarget;
 const Mode = std.builtin.Mode;
-const buildSokol = @import("third-party/sokol-zig/build.zig").buildSokol;
+const sokol = @import("third-party/sokol-zig/build.zig");
 const buildLua = @import("third-party/lua-build.zig").buildLua;
 const print = @import("std").debug.print;
 
@@ -36,7 +36,7 @@ const fonts = [_][]const u8{
 pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
     const mode = b.standardReleaseOptions();
-    const sokol = buildSokol(b, target, mode, "third-party/sokol-zig/");
+    const buildSokol = sokol.buildSokol(b, target, mode, "third-party/sokol-zig/");
     const lua = buildLua(b, target, mode, "third-party/lua/");
     const options = b.addOptions();
     //-------------------------------------------------------------------------
@@ -73,7 +73,7 @@ pub fn build(b: *Builder) void {
         exe_LabCart.addIncludeDir("./third-party/microui/demo"); // for atlas.ini
         exe_LabCart.addCSourceFile("./third-party/microui/src/microui.c", &c_args);
         exe_LabCart.addCSourceFile("./third-party/sgl-microui.c", &c_args);
-        exe_LabCart.linkLibrary(sokol);
+        exe_LabCart.linkLibrary(buildSokol);
         exe_LabCart.linkLibrary(lua);
         exe_LabCart.linkLibrary(lib_LabFont);
         exe_LabCart.linkLibC();

@@ -38,6 +38,8 @@ const CartState = struct {
     h12_st: ?*lf.LabFontState = undefined,
     font_robot_18: ?*lf.LabFont = undefined,
     r18_st: ?*lf.LabFontState = undefined,
+    font_c64_8: ?*lf.LabFont = undefined,
+    c64_st: ?*lf.LabFontState = undefined,
 
     mu_context : ?*ui.mu_Context = null,
 
@@ -85,6 +87,10 @@ export fn init() void {
         "/Users/nporcino/dev/LabCart/third-party/LabFont/resources/robot-18.png",
         lf.LabFontType { .type = lf.LabFontTypeQuadplay } );
 
+    state.font_c64_8 = lf.LabFontLoad("c64", 
+        "", 
+        lf.LabFontType { .type = lf.LabFontTypeSokol8x8 } );
+
     var med_red: lf.struct_LabFontColor = lf.struct_LabFontColor{ 
         .rgba = [4]u8{32, 0, 0, 255}};
 
@@ -102,6 +108,9 @@ export fn init() void {
 
     state.r18_st = lf.LabFontStateBake_bind(state.font_robot_18, 
         18, &med_red, &align_left, 0, 0);
+
+    state.c64_st = lf.LabFontStateBake_bind(state.font_c64_8,
+        8, &med_red, &align_left, 0, 0);
 
     // set up pipeline state as needed for typical 3d rendering
     state.sgl_pipeline = sgl.makePipeline(.{
@@ -266,7 +275,9 @@ export fn frame() void
 
     _ = lf.LabFontDraw("More QuadPlay test", 50, 510, state.r18_st);
 
-     sgl.matrixModeProjection();
+    _ = lf.LabFontDraw("Some c64 text", 50, 550, state.c64_st);
+
+    sgl.matrixModeProjection();
     sgl.ortho(0, ww, wh, 0, -1, 1);
     sgl.scissorRect(0, 0, @floatToInt(i32, ww), @floatToInt(i32, wh), true);
     _ = lf.LabFontDraw("Testing 123", 30, 440, state.n_st);
